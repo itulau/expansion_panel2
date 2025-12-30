@@ -9,6 +9,8 @@ library;
 
 import 'package:flutter/material.dart';
 
+import 'expansible_radio_controller.dart';
+
 const double _kPanelHeaderCollapsedHeight = kMinInteractiveDimension;
 const EdgeInsets _kPanelHeaderExpandedDefaultPadding = EdgeInsets.symmetric(
   vertical: 64.0 - _kPanelHeaderCollapsedHeight,
@@ -188,7 +190,8 @@ class ExpansionPanelList2 extends StatefulWidget {
     this.elevation = 2,
     this.expandIconColor,
     this.materialGapSize = 16.0,
-  }) : _allowOnlyOnePanelOpen = false,
+    this.controller,
+  })  : _allowOnlyOnePanelOpen = false,
         initialOpenPanelValue = null;
 
   /// Creates a radio expansion panel list widget.
@@ -214,6 +217,7 @@ class ExpansionPanelList2 extends StatefulWidget {
     this.elevation = 2,
     this.expandIconColor,
     this.materialGapSize = 16.0,
+    this.controller,
   }) : _allowOnlyOnePanelOpen = true;
 
   /// The children of the expansion panel list. They are laid out in a similar
@@ -276,16 +280,20 @@ class ExpansionPanelList2 extends StatefulWidget {
   /// Defaults to `16.0`.
   final double materialGapSize;
 
+  final ExpansibleRadioController<int>? controller;
+
   @override
-  State<StatefulWidget> createState() => _ExpansionPanelList2State();
+  State<StatefulWidget> createState() => ExpansionPanelList2State();
 }
 
-class _ExpansionPanelList2State extends State<ExpansionPanelList2> {
+class ExpansionPanelList2State extends State<ExpansionPanelList2> {
   ExpansionPanelRadio2? _currentOpenPanel;
+  late ExpansibleRadioController<int> _controller;
 
   @override
   void initState() {
     super.initState();
+    _controller = widget.controller ?? ExpansibleRadioController<int>();
     if (widget._allowOnlyOnePanelOpen) {
       assert(_allIdentifiersUnique(), 'All ExpansionPanelRadio identifier values must be unique.');
       if (widget.initialOpenPanelValue != null) {
@@ -294,7 +302,15 @@ class _ExpansionPanelList2State extends State<ExpansionPanelList2> {
           widget.initialOpenPanelValue,
         );
       }
+      _controller.addListener(_onExpansionChanged);
     }
+  }
+
+  @override
+  void dispose() {
+    _controller.removeListener(_onExpansionChanged);
+    _controller.dispose();
+    super.dispose();
   }
 
   @override
@@ -311,6 +327,16 @@ class _ExpansionPanelList2State extends State<ExpansionPanelList2> {
           widget.initialOpenPanelValue,
         );
       }
+      if (widget.controller != oldWidget.controller) {
+        _controller.removeListener(_onExpansionChanged);
+        if (oldWidget.controller == null) {
+          _controller.dispose();
+        }
+
+        _controller = widget.controller ?? ExpansibleRadioController<int>();
+        _controller.addListener(_onExpansionChanged);
+      }
+
     } else {
       _currentOpenPanel = null;
     }
@@ -330,6 +356,36 @@ class _ExpansionPanelList2State extends State<ExpansionPanelList2> {
       return _currentOpenPanel?.value == radioWidget.value;
     }
     return widget.children[index].isExpanded;
+  }
+
+  void _onExpansionChanged() {
+    if (widget._allowOnlyOnePanelOpen) {
+      ExpansionPanelRadio2? pressedChild;
+
+      for (var element in widget.children) {
+        if ((element as ExpansionPanelRadio2).value == _controller.value) {
+          pressedChild = element;
+          break;
+        }
+      }
+
+      // If another ExpansionPanelRadio was already open, apply its
+      // expansionCallback (if any) to false, because it's closing.
+      for (int childIndex = 0;
+      childIndex < widget.children.length;
+      childIndex += 1) {
+        final ExpansionPanelRadio2 child =
+        widget.children[childIndex] as ExpansionPanelRadio2;
+        if (widget.expansionCallback != null &&
+            child.value == _controller.value) {
+          widget.expansionCallback!(childIndex, false);
+        }
+      }
+
+      setState(() {
+        _currentOpenPanel = _controller.value == null ? null : pressedChild;
+      });
+    }
   }
 
   void _handlePressed(bool isExpanded, int index) {
