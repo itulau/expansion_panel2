@@ -190,9 +190,9 @@ class ExpansionPanelList2 extends StatefulWidget {
     this.elevation = 2,
     this.expandIconColor,
     this.materialGapSize = 16.0,
-    this.controller,
   })  : _allowOnlyOnePanelOpen = false,
-        initialOpenPanelValue = null;
+        initialOpenPanelValue = null,
+        controller = null;
 
   /// Creates a radio expansion panel list widget.
   ///
@@ -280,7 +280,9 @@ class ExpansionPanelList2 extends StatefulWidget {
   /// Defaults to `16.0`.
   final double materialGapSize;
 
-  final ExpansibleRadioController<int>? controller;
+  /// Allows controlling the
+  ///
+  final ExpansibleRadioController<Object>? controller;
 
   @override
   State<StatefulWidget> createState() => ExpansionPanelList2State();
@@ -288,12 +290,11 @@ class ExpansionPanelList2 extends StatefulWidget {
 
 class ExpansionPanelList2State extends State<ExpansionPanelList2> {
   ExpansionPanelRadio2? _currentOpenPanel;
-  late ExpansibleRadioController<int> _controller;
+  late ExpansibleRadioController<Object> _controller;
 
   @override
   void initState() {
     super.initState();
-    _controller = widget.controller ?? ExpansibleRadioController<int>();
     if (widget._allowOnlyOnePanelOpen) {
       assert(_allIdentifiersUnique(), 'All ExpansionPanelRadio identifier values must be unique.');
       if (widget.initialOpenPanelValue != null) {
@@ -302,14 +303,17 @@ class ExpansionPanelList2State extends State<ExpansionPanelList2> {
           widget.initialOpenPanelValue,
         );
       }
+      _controller = widget.controller ?? ExpansibleRadioController<Object>();
       _controller.addListener(_onExpansionChanged);
     }
   }
 
   @override
   void dispose() {
-    _controller.removeListener(_onExpansionChanged);
-    _controller.dispose();
+    if (widget._allowOnlyOnePanelOpen) {
+      _controller.removeListener(_onExpansionChanged);
+      _controller.dispose();
+    }
     super.dispose();
   }
 
@@ -332,11 +336,9 @@ class ExpansionPanelList2State extends State<ExpansionPanelList2> {
         if (oldWidget.controller == null) {
           _controller.dispose();
         }
-
-        _controller = widget.controller ?? ExpansibleRadioController<int>();
+        _controller = widget.controller ?? ExpansibleRadioController<Object>();
         _controller.addListener(_onExpansionChanged);
       }
-
     } else {
       _currentOpenPanel = null;
     }
