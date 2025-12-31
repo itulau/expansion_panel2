@@ -51,7 +51,7 @@ typedef ExpansionPanel2Callback = void Function(int panelIndex, bool isExpanded)
 
 /// Signature for the callback that's called when the header of the
 /// [ExpansionPanel2] needs to rebuild.
-typedef ExpansionPanel2HeaderBuilder = Widget Function(BuildContext context, bool isExpanded);
+typedef ExpansionPanel2HeaderBuilder = Widget Function(BuildContext context, bool isExpanded, bool isEnabled);
 
 /// A material expansion panel. It has a header and a body and can be either
 /// expanded or collapsed. The body of the panel is only visible when it is
@@ -79,6 +79,7 @@ class ExpansionPanel2 {
     this.backgroundColor,
     this.splashColor,
     this.highlightColor,
+    this.enabled = true,
   });
 
   /// The widget builder that builds the expansion panels' header.
@@ -125,6 +126,11 @@ class ExpansionPanel2 {
   ///
   /// Defaults to [ThemeData.cardColor].
   final Color? backgroundColor;
+
+  /// Defines if the element is enabled and can be interacted with
+  ///
+  /// Defaults to true.
+  final bool enabled;
 }
 
 /// An expansion panel that allows for radio-like functionality.
@@ -148,6 +154,7 @@ class ExpansionPanelRadio2 extends ExpansionPanel2 {
     super.backgroundColor,
     super.splashColor,
     super.highlightColor,
+    super.enabled,
   });
 
   /// The value that uniquely identifies a radio panel so that the currently
@@ -443,7 +450,7 @@ class ExpansionPanelList2State extends State<ExpansionPanelList2> {
       }
 
       final ExpansionPanel2 child = widget.children[index];
-      final Widget headerWidget = child.headerBuilder(context, _isChildExpanded(index));
+      final Widget headerWidget = child.headerBuilder(context, _isChildExpanded(index), child.enabled);
 
       Widget expandIconPadded = Padding(
         padding: const EdgeInsetsDirectional.only(end: 8.0),
@@ -455,7 +462,7 @@ class ExpansionPanelList2State extends State<ExpansionPanelList2> {
             padding: _kExpandIconPadding,
             splashColor: child.splashColor,
             highlightColor: child.highlightColor,
-            onPressed: (bool isExpanded) => _handlePressed(isExpanded, index),
+            onPressed: child.enabled ? (bool isExpanded) => _handlePressed(isExpanded, index) : null,
           ),
         ),
       );
@@ -491,7 +498,7 @@ class ExpansionPanelList2State extends State<ExpansionPanelList2> {
           child: InkWell(
             splashColor: child.splashColor,
             highlightColor: child.highlightColor,
-            onTap: () => _handlePressed(_isChildExpanded(index), index),
+            onTap: child.enabled ? () => _handlePressed(_isChildExpanded(index), index) : null,
             child: header,
           ),
         );
